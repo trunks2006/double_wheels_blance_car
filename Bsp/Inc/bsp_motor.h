@@ -9,22 +9,22 @@
 
 #include <stdint.h>
 #include "tim.h"
-
 #ifdef __cplusplus
-class Encoder
+class TB6612
 {
 public:
-    // 构造函数，传入对应的定时器句柄指针
-    Encoder(TIM_HandleTypeDef* htim);
+    // 构造函数，传入定时器的最大 PWM 计数值 (如 8399) 用于抗饱和限幅
+    TB6612(int16_t max_pwm_value);
 
-    // 初始化硬件定时器的编码器模式
-    void encoder_init();
 
-    // 获取自上次读取以来的脉冲增量（即瞬时速度）
-    int16_t encoder_get_delta_pulses();
+    void motor_init();
+
+
+    void motor_set_pwm(int16_t left_pwm, int16_t right_pwm);
 
 private:
-    TIM_HandleTypeDef* encoder_htim;
+    // 保存最大 PWM 限幅值，用于物理安全保护
+    int16_t max_pwm;
 };
 #endif
 
@@ -34,9 +34,11 @@ extern "C"
 {
 #endif
 
-    void EncoderInit(void);
-    int16_t EncoderGetLeft(void);
-    int16_t EncoderGetRight(void);
+
+    void MotorInit(void);
+
+
+    void MotorSetPWM(int16_t left_pwm, int16_t right_pwm);
 
 #ifdef __cplusplus
 }

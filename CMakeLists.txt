@@ -39,7 +39,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         Bsp/Inc/bsp_motor.h
         Bsp/Src/bsp_motor.cpp
         Bsp/Inc/bsp_encoder.h
-        Bsp/Src/bsp_encoder.cpp)
+        Bsp/Src/bsp_encoder.cpp
+        Bsp/Inc/bsp_imu660rb.h
+        Bsp/Src/bsp_imu660rb.cpp
+        Bsp/Inc/bsp_grayscale.h
+        Bsp/Src/bsp_grayscale.cpp
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)

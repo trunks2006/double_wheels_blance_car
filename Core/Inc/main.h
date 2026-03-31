@@ -79,8 +79,6 @@ void Error_Handler(void);
 #define GRAY_ADD_2_GPIO_Port GPIOG
 #define BEEP_Pin GPIO_PIN_3
 #define BEEP_GPIO_Port GPIOD
-#define GRAY_EN_Pin GPIO_PIN_9
-#define GRAY_EN_GPIO_Port GPIOG
 #define GRAY_DATA_IN_Pin GPIO_PIN_11
 #define GRAY_DATA_IN_GPIO_Port GPIOG
 
