@@ -26,6 +26,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bsp_motor.h"
+#include "bsp_imu660rb.h"
+#include "bsp_grayscale.h"
+#include "bsp_encoder.h"
+#include "bsp_indicator.h"
+#include "filter.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,13 +45,26 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+volatile int16_t test_acc[3] = {0};
+volatile int16_t test_gyro[3] = {0};
 
+volatile uint8_t test_gray_data = 0;
+
+volatile int16_t test_enc_left = 0;
+volatile int16_t test_enc_right = 0;
+
+volatile float sys_pitch = 0;
+volatile float sys_pitch_rate = 0;
+volatile float sys_yaw_rate = 0;
+uint32_t last_cycle_tick = 0;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 
+
+uint32_t test_last_tick = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -77,7 +95,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  MotorInit();
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -96,15 +114,30 @@ int main(void)
   MX_TIM6_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  MotorInit();
+  ImuInit();
+  GrayscaleInit();
+  EncoderInit();
+  IndicatorInit();
+  FilterInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // MotorSetPWM(2000, 2000);
-    //电机测试代码，待使用
+    ImuGet6Axis((int16_t*)test_acc, (int16_t*)test_gyro);
+    //test_gray_data = GrayscaleReadAll();
+    //灰度传感器测试代码
+    if (HAL_GetTick() - last_cycle_tick >= 5) {
+      last_cycle_tick = HAL_GetTick();
+
+      FilterUpdate((int16_t*)test_acc, (int16_t*)test_gyro,
+                   (float*)&sys_pitch, (float*)&sys_pitch_rate, (float*)&sys_yaw_rate);
+    }
+    //MotorSetPWM(0, 0);电机测试代码
+    //test_enc_left = EncoderGetLeft();编码器测试代码
+    //test_enc_right = EncoderGetRight();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

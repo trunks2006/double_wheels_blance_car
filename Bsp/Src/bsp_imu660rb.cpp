@@ -43,12 +43,16 @@ void IMU660RB::imu_init()
     HAL_Delay(50);         // 等待复位完成
 
     // 2. 配置加速度计 (CTRL1_XL: 0x10)
-    // 0x40 代表 104Hz 采样率, 2g 量程
-    write_reg(0x10, 0x40);
+    // 0x40 代表 104Hz 采样率, 2g 量程，此处更改的通信频率，改为了0x50,即208HZ
+    write_reg(0x10, 0x50);
 
     // 3. 配置陀螺仪 (CTRL2_G: 0x11)
-    // 0x4C 代表 104Hz 采样率, 2000 dps 量程
-    write_reg(0x11, 0x4C);
+    // 0x4C 代表 104Hz 采样率, 2000 dps 量程,此处更改的通信频率，改为了0x5C,即208HZ
+    write_reg(0x11, 0x5C);
+
+    // 4. 配置控制寄存器 (CTRL3_C: 0x12)
+    // 防撕裂与连续读取配置
+    write_reg(0x12, 0x44);
 }
 
 void IMU660RB::imu_get_6axis(int16_t* acc, int16_t* gyro)

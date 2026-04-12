@@ -44,6 +44,11 @@ add_executable(${CMAKE_PROJECT_NAME}
         Bsp/Src/bsp_imu660rb.cpp
         Bsp/Inc/bsp_grayscale.h
         Bsp/Src/bsp_grayscale.cpp
+        Bsp/Inc/bsp_indicator.h
+        Bsp/Src/bsp_indicator.cpp
+        Algorithm/Inc/filter.h
+        Algorithm/Src/filter.cpp
+
 )
 
 # Add STM32CubeMX generated sources
@@ -67,6 +72,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         Bsp/Inc
         Core
         Core/Inc
+        Algorithm
+        Algorithm/Inc
 )
 
 # Add project symbols (macros)
