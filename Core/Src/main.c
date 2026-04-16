@@ -31,6 +31,7 @@
 #include "bsp_encoder.h"
 #include "bsp_indicator.h"
 #include "filter.h"
+#include "algo_control.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -120,22 +121,28 @@ int main(void)
   EncoderInit();
   IndicatorInit();
   FilterInit();
+  AlgoInit();
+  HAL_TIM_Base_Start_IT(&htim6);
+  BeepOn();
+  HAL_Delay(100);
+  BeepOff();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    ImuGet6Axis((int16_t*)test_acc, (int16_t*)test_gyro);
+    //ImuGet6Axis((int16_t*)test_acc, (int16_t*)test_gyro);
     //test_gray_data = GrayscaleReadAll();
     //灰度传感器测试代码
-    if (HAL_GetTick() - last_cycle_tick >= 5) {
+    /*if (HAL_GetTick() - last_cycle_tick >= 5) {
       last_cycle_tick = HAL_GetTick();
 
       FilterUpdate((int16_t*)test_acc, (int16_t*)test_gyro,
                    (float*)&sys_pitch, (float*)&sys_pitch_rate, (float*)&sys_yaw_rate);
-    }
-    //MotorSetPWM(0, 0);电机测试代码
+    }*/
+    //MotorSetPWM(5000, -5000);
+    //电机测试代码
     //test_enc_left = EncoderGetLeft();编码器测试代码
     //test_enc_right = EncoderGetRight();
     /* USER CODE END WHILE */
@@ -191,7 +198,43 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+// 这个函数由硬件定时器 TIM6 严格每 5ms 强行打断并执行一次
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+  if (htim->Instance == TIM6)
+  {
+    // 1. 感知层：获取传感器原始情报
+    int16_t raw_acc[3] = {0};
+    int16_t raw_gyro[3] = {0};
+    ImuGet6Axis(raw_acc, raw_gyro);
 
+    int16_t enc_l = EncoderGetLeft();
+    int16_t enc_r = EncoderGetRight();
+
+    // 2. 姿态层：提炼平滑的欧拉角
+    FilterUpdate(raw_acc, raw_gyro,
+                 (float*)&sys_pitch, (float*)&sys_pitch_rate, (float*)&sys_yaw_rate);
+
+    // 3. 保护层：跌倒锁死检测 (倾角大于 40 度视为跌倒)
+    if (sys_pitch > 40.0f || sys_pitch < -40.0f) {
+      AlgoStop();         // 算法层清空所有积分历史
+      MotorSetPWM(0, 0);  // 底层直接断电，防止烧毁电机或伤人
+      LedRedOn();
+    }
+    else {
+      LedRedOff();
+
+      // 4. 大脑层：串级 PID 调度
+      int16_t pwm_l = 0;
+      int16_t pwm_r = 0;
+      AlgoUpdate(sys_pitch, sys_pitch_rate, sys_yaw_rate,
+                 enc_l, enc_r,
+                 &pwm_l, &pwm_r);
+
+      // 5. 执行层：肌肉发力
+      MotorSetPWM(pwm_l, pwm_r);
+    }
+  }
+}
 /* USER CODE END 4 */
 
 /**

@@ -48,6 +48,16 @@ add_executable(${CMAKE_PROJECT_NAME}
         Bsp/Src/bsp_indicator.cpp
         Algorithm/Inc/filter.h
         Algorithm/Src/filter.cpp
+        PID/Inc/pid_base.h
+        PID/Src/pid_base.cpp
+        PID/Inc/angle_pid.h
+        PID/Src/angle_pid.cpp
+        PID/Src/speed_pid.cpp
+        PID/Inc/speed_pid.h
+        PID/Inc/turn_pid.h
+        PID/Src/turn.pid.cpp
+        Algorithm/Inc/algo_control.h
+        Algorithm/Src/algo_control.cpp
 
 )
 
@@ -74,6 +84,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         Core/Inc
         Algorithm
         Algorithm/Inc
+        PID
+        PID/Inc
 )
 
 # Add project symbols (macros)

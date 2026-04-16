@@ -22,7 +22,7 @@ void ComplementaryFilter::update(int16_t* raw_acc, int16_t* raw_gyro, float& pit
 {
     // ================= 1. 数据提取与方向纠正 =================
     // 刚才我们测出，车头前倾时 raw_acc[0] 是负数 (-2530)。
-    // 为了符合控制理论习惯 (前倾角度为正)，我们在这里加上负号强行翻转 X 轴！
+    // 为了符合控制理论习惯 (前倾角度为正)，我们在这里加上负号强行翻转 X 轴！ps:现已调正
     float acc_x = -(float)raw_acc[0];
     float acc_z = (float)raw_acc[2];
 
