@@ -58,6 +58,8 @@ volatile float sys_pitch = 0;
 volatile float sys_pitch_rate = 0;
 volatile float sys_yaw_rate = 0;
 uint32_t last_cycle_tick = 0;
+volatile int16_t enc_l;
+volatile int16_t enc_r;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -134,16 +136,16 @@ int main(void)
   {
     //ImuGet6Axis((int16_t*)test_acc, (int16_t*)test_gyro);
     //test_gray_data = GrayscaleReadAll();
-    //灰度传感器测试代码
+    //-灰度传感器测试代码
     /*if (HAL_GetTick() - last_cycle_tick >= 5) {
       last_cycle_tick = HAL_GetTick();
 
       FilterUpdate((int16_t*)test_acc, (int16_t*)test_gyro,
                    (float*)&sys_pitch, (float*)&sys_pitch_rate, (float*)&sys_yaw_rate);
     }*/
-    //MotorSetPWM(5000, -5000);
+    //MotorSetPWM(5000, 5000);
     //电机测试代码
-    //test_enc_left = EncoderGetLeft();编码器测试代码
+    //test_enc_left = EncoderGetLeft();//编码器测试代码
     //test_enc_right = EncoderGetRight();
     /* USER CODE END WHILE */
 
@@ -205,10 +207,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     // 1. 感知层：获取传感器原始情报
     int16_t raw_acc[3] = {0};
     int16_t raw_gyro[3] = {0};
+    uint8_t gray_data = GrayscaleReadAll();
     ImuGet6Axis(raw_acc, raw_gyro);
 
-    int16_t enc_l = EncoderGetLeft();
-    int16_t enc_r = EncoderGetRight();
+    enc_l = EncoderGetLeft();
+    enc_r = EncoderGetRight();
 
     // 2. 姿态层：提炼平滑的欧拉角
     FilterUpdate(raw_acc, raw_gyro,
@@ -227,7 +230,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
       int16_t pwm_l = 0;
       int16_t pwm_r = 0;
       AlgoUpdate(sys_pitch, sys_pitch_rate, sys_yaw_rate,
-                 enc_l, enc_r,
+                 enc_l, enc_r,gray_data,
                  &pwm_l, &pwm_r);
 
       // 5. 执行层：肌肉发力

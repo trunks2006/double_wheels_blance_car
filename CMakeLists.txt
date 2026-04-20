@@ -58,6 +58,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         PID/Src/turn.pid.cpp
         Algorithm/Inc/algo_control.h
         Algorithm/Src/algo_control.cpp
+        Algorithm/Inc/algo_grayscale.h
+        Algorithm/Src/algo_grayscale.cpp
 
 )
 
