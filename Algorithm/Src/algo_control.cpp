@@ -6,7 +6,7 @@
 // 构造函数：初始化三大环参数与滤波器状态
 AlgoControl::AlgoControl(float alpha)
     : pid_upright(-1680.0f, 0.0f, -35.0f, 8200.0f, 0.0f),   // 直立环：纯 PD，限幅 8200
-      pid_velocity(0.35f, 0.0025f, 0.0f, 20.0f, 1800.0f), // 速度环：纯 PI，角度限幅 15度
+      pid_velocity(0.35f, 0.003f, 0.0f, 20.0f, 1800.0f), // 速度环：纯 PI，角度限幅 15度
       pid_turn(0.0f, 0.0f, 0.0f, 3000.0f, 0.0f),      // 转向环：暂不启用，限幅 3000
       lpf_alpha(alpha),
       speed_left_filtered(0.0f),
@@ -47,7 +47,7 @@ void AlgoControl::update(float sys_pitch, float sys_pitch_rate, float sys_yaw_ra
     // 假设你测出小车在 -2.3 度时刚好能前后平衡，这里就填 -2.3f。
     // =========================================================
     //target_pitch = -0.94f; // <--- 调参时在 Live Watch 中直接修改这个值找重心！
-    target_pitch += -1.27f;
+    target_pitch += -1.32f;
     // --- 4. 直立内环计算 ---
     float base_pwm = pid_upright.calc(target_pitch, sys_pitch, sys_pitch_rate);
 
