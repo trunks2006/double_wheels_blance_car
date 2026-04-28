@@ -22,7 +22,10 @@ public:
     float lpf_alpha;             // 低通滤波系数
     float speed_left_filtered;   // 左轮平滑速度
     float speed_right_filtered;  // 右轮平滑速度
-
+    // ================= 接收应用层指令 =================
+    float target_speed; // 目标速度 (脉冲/5ms)
+    float target_turn;  // 目标转向 (通常传入循迹偏差 track_error，盲走时传 0)
+    bool is_tracking_mode;
     // 构造函数
     AlgoControl(float alpha);
 
@@ -31,7 +34,7 @@ public:
     void stop();
 
     // 核心大循环运算接口
-    void update(float sys_pitch, float sys_pitch_rate, float sys_yaw_rate,
+    void update(float sys_pitch, float sys_pitch_rate, float sys_yaw,float sys_yaw_rate,
                 int16_t enc_left, int16_t enc_right,uint8_t gray_data,
                 int16_t& pwm_left, int16_t& pwm_right);
 };
@@ -44,7 +47,7 @@ extern "C" {
 
     void AlgoInit(void);
     void AlgoStop(void);
-    void AlgoUpdate(float sys_pitch, float sys_pitch_rate, float sys_yaw_rate,
+    void AlgoUpdate(float sys_pitch, float sys_pitch_rate,float sys_yaw, float sys_yaw_rate,
                     int16_t enc_left, int16_t enc_right,uint8_t gray_data,
                     int16_t* pwm_left, int16_t* pwm_right);
 

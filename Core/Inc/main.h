@@ -67,6 +67,10 @@ void Error_Handler(void);
 #define LED_RED_GPIO_Port GPIOF
 #define LED_GREEN_Pin GPIO_PIN_10
 #define LED_GREEN_GPIO_Port GPIOF
+#define SWB2_Pin GPIO_PIN_3
+#define SWB2_GPIO_Port GPIOC
+#define SWB1_Pin GPIO_PIN_1
+#define SWB1_GPIO_Port GPIOA
 #define BIN_2_Pin GPIO_PIN_11
 #define BIN_2_GPIO_Port GPIOF
 #define IMU_CS_Pin GPIO_PIN_12

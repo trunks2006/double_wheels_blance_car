@@ -13,14 +13,15 @@ class ComplementaryFilter
 public:
     ComplementaryFilter(float dt_sec, float filter_alpha);
     void reset();
-
+    void reset_yaw();
     // 传入原始数据，输出平滑后的俯仰角、Y轴角速度(用于直立D项)、Z轴角速度(用于盲走/转向)
-    void update(int16_t* raw_acc, int16_t* raw_gyro, float& pitch, float& pitch_rate, float& yaw_rate);
+    void update(int16_t* raw_acc, int16_t* raw_gyro, float& pitch, float& pitch_rate,float& yaw, float& yaw_rate);
 
 private:
     float dt;
     float alpha;
     float current_pitch;
+    float current_yaw;
 };
 #endif
 
@@ -28,7 +29,8 @@ private:
 extern "C" {
 #endif
     void FilterInit(void);
-    void FilterUpdate(int16_t* acc, int16_t* gyro, float* pitch, float* pitch_rate, float* yaw_rate);
+    void FilterUpdate(int16_t* acc, int16_t* gyro, float* pitch, float* pitch_rate,float* yaw, float* yaw_rate);
+    void FilterResetYaw(void);
 #ifdef __cplusplus
 }
 #endif

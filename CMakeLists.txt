@@ -60,6 +60,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Algorithm/Src/algo_control.cpp
         Algorithm/Inc/algo_grayscale.h
         Algorithm/Src/algo_grayscale.cpp
+        App/Inc/app_task.h
+        App/Src/app_task.cpp
+        Algorithm/Inc/odometer.h
+        Algorithm/Src/odometer.cpp
 
 )
 
@@ -88,6 +92,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         Algorithm/Inc
         PID
         PID/Inc
+        App
+        App/Inc
 )
 
 # Add project symbols (macros)

@@ -32,6 +32,7 @@
 #include "bsp_indicator.h"
 #include "filter.h"
 #include "algo_control.h"
+#include "app_task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,6 +58,7 @@ volatile int16_t test_enc_right = 0;
 volatile float sys_pitch = 0;
 volatile float sys_pitch_rate = 0;
 volatile float sys_yaw_rate = 0;
+volatile float sys_yaw = 0;
 uint32_t last_cycle_tick = 0;
 volatile int16_t enc_l;
 volatile int16_t enc_r;
@@ -124,6 +126,7 @@ int main(void)
   IndicatorInit();
   FilterInit();
   AlgoInit();
+  AppTaskInit();
   HAL_TIM_Base_Start_IT(&htim6);
   BeepOn();
   HAL_Delay(100);
@@ -215,7 +218,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
     // 2. 姿态层：提炼平滑的欧拉角
     FilterUpdate(raw_acc, raw_gyro,
-                 (float*)&sys_pitch, (float*)&sys_pitch_rate, (float*)&sys_yaw_rate);
+                 (float*)&sys_pitch, (float*)&sys_pitch_rate,(float*)&sys_yaw, (float*)&sys_yaw_rate);
 
     // 3. 保护层：跌倒锁死检测 (倾角大于 40 度视为跌倒)
     if (sys_pitch > 40.0f || sys_pitch < -40.0f) {
@@ -229,7 +232,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
       // 4. 大脑层：串级 PID 调度
       int16_t pwm_l = 0;
       int16_t pwm_r = 0;
-      AlgoUpdate(sys_pitch, sys_pitch_rate, sys_yaw_rate,
+
+      AppTaskUpdate(enc_l, enc_r,gray_data);
+
+      AlgoUpdate(sys_pitch, sys_pitch_rate, sys_yaw , sys_yaw_rate,
                  enc_l, enc_r,gray_data,
                  &pwm_l, &pwm_r);
 

@@ -14,11 +14,16 @@
 #define GYRO_SCALE (0.07f)
 
 ComplementaryFilter::ComplementaryFilter(float dt_sec, float filter_alpha)
-    : dt(dt_sec), alpha(filter_alpha), current_pitch(0.0f) {}
+    : dt(dt_sec), alpha(filter_alpha), current_pitch(0.0f), current_yaw(0.0f) {}
 
-void ComplementaryFilter::reset() { current_pitch = 0.0f; }
-
-void ComplementaryFilter::update(int16_t* raw_acc, int16_t* raw_gyro, float& pitch, float& pitch_rate, float& yaw_rate)
+void ComplementaryFilter::reset() {
+    current_pitch = 0.0f;
+    current_yaw = 0.0f;
+}
+void ComplementaryFilter::reset_yaw() {
+    current_yaw = 0.0f; // 仅清零 Z 轴积分，完美保留前倾姿态！
+}
+void ComplementaryFilter::update(int16_t* raw_acc, int16_t* raw_gyro, float& pitch, float& pitch_rate, float& yaw, float& yaw_rate)
 {
     // ================= 1. 数据提取与方向纠正 =================
     // 刚才我们测出，车头前倾时 raw_acc[0] 是负数 (-2530)。
@@ -30,7 +35,6 @@ void ComplementaryFilter::update(int16_t* raw_acc, int16_t* raw_gyro, float& pit
     // 根据右手定则，如果 X 轴反了，我们也要检查 Y 轴转动的符号。
     // 如果之后上车发现车倒了，只需要在这里给 raw_gyro[1] 加个负号即可。
     pitch_rate = (float)raw_gyro[1] * GYRO_SCALE;
-
     // Z 轴角速度 (测量左右转向，用于盲走和循迹)
     yaw_rate = (float)raw_gyro[2] * GYRO_SCALE;
 
@@ -42,9 +46,10 @@ void ComplementaryFilter::update(int16_t* raw_acc, int16_t* raw_gyro, float& pit
     // alpha(0.98)：98% 相信陀螺仪的高频动态积分
     // (1-alpha)(0.02)：2% 依靠加速度计纠正陀螺仪的温漂
     current_pitch = alpha * (current_pitch + pitch_rate * dt) + (1.0f - alpha) * acc_angle;
-
+    current_yaw += yaw_rate * dt;
     // 4. 数据输出
     pitch = current_pitch;
+    yaw = current_yaw;
 }
 
 
@@ -55,8 +60,10 @@ extern "C" {
     void FilterInit(void) {
         imu_filter.reset();
     }
-
-    void FilterUpdate(int16_t* acc, int16_t* gyro, float* pitch, float* pitch_rate, float* yaw_rate) {
-        imu_filter.update(acc, gyro, *pitch, *pitch_rate, *yaw_rate);
+    void FilterResetYaw(void) {
+        imu_filter.reset_yaw();
+    }
+    void FilterUpdate(int16_t* acc, int16_t* gyro, float* pitch, float* pitch_rate,float* yaw, float* yaw_rate) {
+        imu_filter.update(acc, gyro, *pitch, *pitch_rate,*yaw, *yaw_rate);
     }
 }
