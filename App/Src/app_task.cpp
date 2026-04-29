@@ -187,6 +187,9 @@ void AppTask::execute_mode_oval_track(uint8_t gray_data) {
 // ================= 任务 4：8字交叉 =================
 void AppTask::execute_mode_figure_8(uint8_t gray_data) {
 
+    // ==========================================
+    // 1. 视觉防抖滤网
+    // ==========================================
     if (gray_data == 0x00) {
         if (line_lost_count < 255) line_lost_count++;
     } else {
@@ -196,10 +199,13 @@ void AppTask::execute_mode_figure_8(uint8_t gray_data) {
     bool see_line = (line_lost_count < 10);
 
     // ==========================================
-    // 1. 边缘检测与动作触发,添加了防抖动
+    // 2. 边缘检测与跳变计数
     // ==========================================
     if (see_line != was_on_line) {
         beep_timer = 0;
+
+        // 【核心】：每次跳变（脱线或踩线），状态计数器加 1
+        state_timer++;
 
         if (!see_line) {
             FilterResetYaw();
@@ -211,30 +217,44 @@ void AppTask::execute_mode_figure_8(uint8_t gray_data) {
     }
 
     // ==========================================
-    // 2. 基于“存在状态”和“时间”的双维动作执行
+    // 3. 【新增】：终点判定！(经历 5 次跳变 = 跑完 8 字回到 A 点)
+    // ==========================================
+    if (state_timer >= 5) {
+        robot->target_speed = 0.0f;       // 死锁刹车
+        robot->target_turn = 0.0f;        // 方向回正
+        robot->is_tracking_mode = false;  // 关闭循迹
+
+        // 终点长鸣，宣告完美跑完 8 字！
+        led_beep->alarm_on();
+
+        return; // 直接 return 锁死状态，绝不执行后续动力逻辑！
+    }
+
+    // ==========================================
+    // 4. 基于“存在状态”和“时间”的双维动作执行
     // ==========================================
     if (see_line) {
         // 【线上模式】：全速循迹，不废话
-        robot->target_speed = CRUISE_SPEED;
+        robot->target_speed = 7.5f;
         robot->is_tracking_mode = true;
     }
     else {
         // 【盲走模式】：时序分层控制 (白嫖 beep_timer！)
         robot->is_tracking_mode = false;
 
-        // 目标偏航角：物理 38.66 度，缩减一半后给 19.33 度，并附带交替方向
-        robot->target_turn =23.5f * cross_turn_dir;
+        // 目标偏航角：你调好的 23.5 度，并附带交替方向
+        robot->target_turn = 24.5f * cross_turn_dir;
 
         // 60 次中断 * 5ms = 300ms。这段时间足够底层 PID 把车头拧到位了。
         if (beep_timer < 60) {
             robot->target_speed = 0.0f; // 【第一阶段：刹车，原地扭车头】
         } else {
-            robot->target_speed = 9.0; // 方便入弯，这里没有使用宏定义中定义的速度
+            robot->target_speed = 9.0f; // 【第二阶段：发车冲刺】你调好的 9.0f 方便入弯
         }
     }
 
     // ==========================================
-    // 3. 非阻塞蜂鸣器管理 (它在发声的同时，也充当了动作的秒表)
+    // 5. 非阻塞蜂鸣器管理 (它在发声的同时，也充当了动作的秒表)
     // ==========================================
     if (beep_timer < 1000) {
         if (beep_timer == 0)  led_beep->alarm_on();
@@ -242,7 +262,6 @@ void AppTask::execute_mode_figure_8(uint8_t gray_data) {
         beep_timer++;
     }
 }
-
 
 // ================= C 接口封装 =================
 // 引用底层的全局对象
