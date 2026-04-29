@@ -34,6 +34,8 @@ private:
     float cross_turn_dir;
     uint32_t state_timer;    // 用于 3 秒计时
     uint32_t beep_timer;
+    // 【新增】：专为任务 3、4 准备的脱线防抖计数器
+    uint8_t line_lost_count;
     // 内部方法
     ModeSelect read_dip_switches();
     void execute_mode_stand();

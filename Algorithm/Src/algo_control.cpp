@@ -45,7 +45,7 @@ void AlgoControl::update(float sys_pitch, float sys_pitch_rate, float sys_yaw,fl
     float target_pitch = pid_velocity.calc(target_speed, current_speed);
 
 
-    target_pitch += -0.85f;
+    target_pitch += -2.0f;
     // --- 4. 直立内环计算 ---
     float base_pwm = pid_upright.calc(target_pitch, sys_pitch, sys_pitch_rate);
     //base_pwm = 0.0f;//调试角度环用

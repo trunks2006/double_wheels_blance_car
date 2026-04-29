@@ -9,11 +9,13 @@
 #define CRUISE_SPEED  7.5f
 AppTask::AppTask(AlgoControl* algo, SystemIndicator* indicator)
     : robot(algo), led_beep(indicator), current_mode(MODE_STAND),
-      state_timer(0) {}
+      was_on_line(false), cross_turn_dir(1.0f), state_timer(0), beep_timer(9999),
+      line_lost_count(255) {}
 
 void AppTask::init() {
     current_mode = read_dip_switches();
     state_timer = 0;
+    line_lost_count = 255;
     was_on_line = false;// 初始化时强制停车
     if (current_mode == MODE_FIGURE_8) {
         // 【任务 4 专属】：欺骗大脑！
@@ -109,58 +111,92 @@ void AppTask::execute_mode_1(uint8_t gray_data) {
         state_timer = 0;       // 只要在跑，计时器就被死死压制在 0
     }
 }
-// ================= 任务 3：极致精简的“边缘触发”控制 =================
+// ================= 任务 3：圆弧循迹与盲走 (终极防抖 + 终局刹车版) =================
 void AppTask::execute_mode_oval_track(uint8_t gray_data) {
 
-    // 1. 获取当前瞬间的物理真理
-    bool see_line = (gray_data != 0x00);
+    // ==========================================
+    // 1. 视觉防抖滤网 (过滤弯道颠簸引发的假脱线)
+    // ==========================================
+    if (gray_data == 0x00) {
+        if (line_lost_count < 255) line_lost_count++; // 没看到线，计数累加
+    } else {
+        line_lost_count = 0; // 只要看到任何一帧黑线，瞬间清零！
+    }
+
+    // 判断真理：连续瞎了 10 帧 (50ms)，大脑才承认是真的脱线了！
+    bool see_line = (line_lost_count < 10);
 
     // ==========================================
-    // 2. 【核心动作】：边缘检测 (发生跳变的瞬间)
+    // 2. 边缘检测：升级为“跳变计数器”
     // ==========================================
     if (see_line != was_on_line) {
-        // 只要状态不一样，立刻拉响警报！(标志点响应)
         beep_timer = 0;
 
-        // 如果是刚刚“瞎了” (从有线变成了没线)
-        if (!see_line) {
-            FilterResetYaw(); // 瞬间把出弯脱线那一刻的车头方向死死钉为 0 度！
-        }
+        // 【核心灵魂】：每次真正的踩线或脱线，计数器 +1
+        state_timer++;
 
-        // 刷新记忆，为下一次跳变做准备
+        if (!see_line) {
+            FilterResetYaw(); // 刚出弯道脱线的瞬间，清零陀螺仪准备盲走
+        }
         was_on_line = see_line;
     }
 
     // ==========================================
-    // 3. 【持续动作】：肌肉层死循环执行
+    // 3. 终点判定！(经历了 4 次跳变 = 跑完一圈回到了 A 点)
+    // ==========================================
+    if (state_timer >= 4) {
+        robot->target_speed = 0.0f;       // 死锁刹车
+        robot->target_turn = 0.0f;        // 方向回正
+        robot->is_tracking_mode = false;  // 关闭循迹
+
+        // 终点声光长鸣，宣告任务完美结束！
+        led_beep->alarm_on();
+
+        // 【极其关键】：直接 return，拒不执行后面的代码，让小车永远困在刹车状态！
+        return;
+    }
+
+    // ==========================================
+    // 4. 肌肉层执行 (保留了你调好的 -7.5f)
     // ==========================================
     robot->target_speed = CRUISE_SPEED;
 
     if (see_line) {
-        // 只要能看见线，就开启循迹人格咬死黑线
+        // 线上模式：全速循迹
         robot->is_tracking_mode = true;
     } else {
-        // 只要看不见线，就关掉循迹，让陀螺仪按着刚才清零的 0 度狂奔
+        // 盲走模式：根据跳变次数区分不同赛段
         robot->is_tracking_mode = false;
-        robot->target_turn = 0.0f;
+
+        if (state_timer == 0) {
+            robot->target_turn = 0.0f;       // 第 0 次跳变 (A->B)：笔直起跑
+        } else if (state_timer == 2) {
+            robot->target_turn = -8.0f;      // 第 2 次跳变 (B->C)：向右微调咬线
+        }
     }
 
     // ==========================================
-    // 4. 非阻塞“短促滴一声”管理
+    // 5. 运行中的短促蜂鸣器 (标志点响应)
     // ==========================================
     if (beep_timer < 1000) {
-        if (beep_timer == 0)  led_beep->alarm_on();   // 响
-        if (beep_timer == 20) led_beep->alarm_off();  // 20 * 5ms = 100ms 后关
+        if (beep_timer == 0)  led_beep->alarm_on();
+        if (beep_timer == 20) led_beep->alarm_off();
         beep_timer++;
     }
 }
 // ================= 任务 4：8字交叉 =================
 void AppTask::execute_mode_figure_8(uint8_t gray_data) {
 
-    bool see_line = (gray_data != 0x00);
+    if (gray_data == 0x00) {
+        if (line_lost_count < 255) line_lost_count++;
+    } else {
+        line_lost_count = 0;
+    }
+
+    bool see_line = (line_lost_count < 10);
 
     // ==========================================
-    // 1. 边缘检测与动作触发
+    // 1. 边缘检测与动作触发,添加了防抖动
     // ==========================================
     if (see_line != was_on_line) {
         beep_timer = 0;
@@ -187,13 +223,13 @@ void AppTask::execute_mode_figure_8(uint8_t gray_data) {
         robot->is_tracking_mode = false;
 
         // 目标偏航角：物理 38.66 度，缩减一半后给 19.33 度，并附带交替方向
-        robot->target_turn = 21.33f * cross_turn_dir;
+        robot->target_turn =23.5f * cross_turn_dir;
 
         // 60 次中断 * 5ms = 300ms。这段时间足够底层 PID 把车头拧到位了。
         if (beep_timer < 60) {
             robot->target_speed = 0.0f; // 【第一阶段：刹车，原地扭车头】
         } else {
-            robot->target_speed = CRUISE_SPEED; // 【第二阶段：发车，按锁死的新角度直线冲刺】
+            robot->target_speed = 9.0; // 方便入弯，这里没有使用宏定义中定义的速度
         }
     }
 
